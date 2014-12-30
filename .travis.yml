@@ -8,6 +8,7 @@ notifications:
     recipients:
       - z@apiary.io
       - ladislav@apiary.io
+      - adam@apiary.io
     on_success: change
     on_failure: always
   hipchat:
