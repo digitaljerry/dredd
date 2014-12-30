@@ -40,10 +40,11 @@ if (argError) {
 }
 
 configuration = {
-  'blueprintPath': argv._[0],
   'server': argv._[1],
   'options': argv
 };
+
+configuration.options.path.push(argv._[0]);
 
 dredd = new Dredd(configuration);
 

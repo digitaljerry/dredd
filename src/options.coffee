@@ -74,6 +74,11 @@ options =
     description: "Silences commandline output.\n"
     default: false
 
+  path:
+    alias: "p"
+    description: "Additional blueprint paths. Can be used multiple times with glob pattern."
+    default: []
+
   help:
     description: "Show usage information.\n"
 

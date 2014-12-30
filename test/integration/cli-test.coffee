@@ -44,7 +44,7 @@ describe "Command line interface", () ->
       assert.equal exitStatus, 1
 
     it 'should print error message to stderr', () ->
-      assert.include stderr, 'Error: ENOENT, open'
+      assert.include stderr, 'not found'
 
   describe "Arguments with existing bleuprint and responding server", () ->
     describe "when executing the command and the server is responding as specified in the blueprint", () ->
