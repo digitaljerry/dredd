@@ -4,8 +4,9 @@ blueprintAstToRuntime = require '../../src/blueprint-ast-to-runtime'
 describe "blueprintAstToRuntime()", () ->
   blueprintAst = require '../fixtures/blueprint-ast'
   data = {}
+  filename = './path/to/blueprint.apib'
   before () ->
-    data = blueprintAstToRuntime blueprintAst
+    data = blueprintAstToRuntime blueprintAst, filename
 
   describe 'its return', () ->
     it 'shuold return an object', () ->
@@ -51,6 +52,11 @@ describe "blueprintAstToRuntime()", () ->
         it 'is an object', () ->
           transactions.forEach (transaction, index) ->
             assert.isObject transaction['origin'], 'Transaction index ' + index
+
+        it 'have filename property with file name from second param', () ->
+          transactions.forEach (transaction, index) ->
+            assert.property transaction['origin'], 'filename', 'Transaction index ' + index
+            assert.equal transaction['origin']['filename'], filename, 'Transaction index ' + index
 
       describe 'value under request key', () ->
         ['uri','method','headers','body'].forEach (key) ->

@@ -114,12 +114,28 @@ describe 'Dredd class', () ->
           assert.include dredd.configuration.files, './test/fixtures/multifile/message.apib'
           done()
 
-      it 'should remove globs', (done) ->
+      it 'should remove globs from config', (done) ->
         dredd.run (error) ->
           return done error if error
           assert.notInclude dredd.configuration.files, './test/fixtures/multifile/*.apib'
           assert.notInclude dredd.configuration.files, './test/fixtures/multifile/*.balony'
           done()
+
+      it 'should load file contents on paths to config', (done) ->
+        dredd.run (error) ->
+          return done error if error
+          assert.isObject dredd.configuration.data
+          assert.property dredd.configuration.data, './test/fixtures/multifile/greeting.apib'
+          assert.isObject dredd.configuration.data['./test/fixtures/multifile/greeting.apib']
+          assert.property dredd.configuration.data['./test/fixtures/multifile/greeting.apib'], 'raw'
+          done()
+
+      it 'should parse loaded files', (done) ->
+        dredd.run (error) ->
+          return done error if error
+          assert.property dredd.configuration.data['./test/fixtures/multifile/greeting.apib'], 'parsed'
+          done()
+
 
     describe 'when glob pattern does not match any files', () ->
       before () ->

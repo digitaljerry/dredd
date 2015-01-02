@@ -4,14 +4,15 @@ exampleToHttpPayloadPair = require './example-to-http-payload-pair'
 convertAstMetadata = require './convert-ast-metadata'
 validateParameters = require './validate-parameters'
 
-blueprintAstToRuntime = (blueprintAst) ->
-  runtime = 
+blueprintAstToRuntime = (blueprintAst, filename) ->
+  runtime =
     transactions: []
     errors: []
     warnings: []
-  
+
   origin = {}
-  
+  origin['filename'] = filename
+
   for resourceGroup in blueprintAst['resourceGroups']
     origin['resourceGroupName'] = resourceGroup['name']
 
@@ -34,10 +35,10 @@ blueprintAstToRuntime = (blueprintAst) ->
             origin: JSON.parse(JSON.stringify(origin))
             message: message
           }
-  
+
         # expand URI parameters
         uriResult = expandUriTemplateWithParameters resource['uriTemplate'], parameters
-        
+
         for message in uriResult['warnings']
           runtime['warnings'].push {
             origin: JSON.parse(JSON.stringify(origin))
@@ -50,13 +51,13 @@ blueprintAstToRuntime = (blueprintAst) ->
             message: message
           }
 
-        
-        if uriResult['uri'] != null      
+
+        if uriResult['uri'] != null
           for example in action['examples']
             origin['exampleName'] = example['name']
-            
+
             result = exampleToHttpPayloadPair example
-            
+
             for message in result['warnings']
               runtime['warnings'].push {
                 origin: JSON.parse(JSON.stringify(origin))
@@ -71,10 +72,10 @@ blueprintAstToRuntime = (blueprintAst) ->
             #   }
 
             transaction = result['pair']
-            transaction['origin'] = JSON.parse(JSON.stringify(origin)) 
+            transaction['origin'] = JSON.parse(JSON.stringify(origin))
             transaction['request']['uri'] = uriResult['uri']
             transaction['request']['method'] = action['method']
-            
+
             runtime['transactions'].push transaction
 
   return runtime

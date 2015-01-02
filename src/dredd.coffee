@@ -42,43 +42,60 @@ class Dredd
         config.files = config.files.concat match
         globCallback()
 
-    , (err) ->
+    , (err) =>
       return callback(err, stats) if err
       return callback({message: "Blueprint file or files not found on path: '#{config.options.path}'"}, stats) if config.files.length == 0
 
-      uniqueFiles = config.files.filter (item, pos) ->
+      # only unique files
+      config.files = config.files.filter (item, pos) ->
         return config.files.indexOf(item) == pos
 
-      config.files = uniqueFiles
+      config.data = {}
+      async.each config.files, (file, loadCallback) ->
+        fs.readFile file, 'utf8', (loadingError, data) ->
+          return loadCallback(loadingError) if loadingError
+          config.data[file] = {raw: data, file: file}
+          loadCallback()
 
-      config.blueprintPath = config.files[0] # temporary till multifile processing
+      , (err) =>
+        return callback(err, stats) if err
 
-      fs.readFile config.blueprintPath, 'utf8', (loadingError, data) ->
-        return callback(loadingError, stats) if loadingError
+        async.each Object.keys(config.data), (file, parseCallback) ->
+          protagonist.parse config.data[file]['raw'], (protagonistError, result) ->
+            return parseCallback protagonistError if protagonistError
+            config.data[file]['parsed'] = result
+            parseCallback()
+        , (err) =>
+          return callback(err, config.reporter) if err
 
-        reporterCount = config.emitter.listeners('start').length
-        config.emitter.emit 'start', data, () ->
-          reporterCount--
-          if reporterCount is 0
-            protagonist.parse data, blueprintParsingComplete
+          for file, data of config.data
+            result = data['parsed']
+            if result['warnings'].length > 0
+              for warning in result['warnings']
+                message = "Parser warning in file '#{file}':"  + ' (' + warning.code + ') ' + warning.message
+                for loc in warning['location']
+                  pos = loc.index + ':' + loc.length
+                  message = message + ' ' + pos
+                logger.warn message
 
-    blueprintParsingComplete = (protagonistError, result) =>
-      return callback(protagonistError, config.reporter) if protagonistError
+          runtime = {}
+          runtime['warnings'] = []
+          runtime['errors'] = []
+          runtime['transactions'] = []
+          for file, data of config.data
+            runtime['warnings'] = runtime['warnings'].concat(blueprintAstToRuntime(result['ast'], file)['warnings'])
+            runtime['errors'] = runtime['errors'].concat(blueprintAstToRuntime(result['ast'], file)['errors'])
+            runtime['transactions'] = runtime['transactions'].concat(blueprintAstToRuntime(result['ast'], file)['transactions'])
 
-      if result['warnings'].length > 0
-        for warning in result['warnings']
-          message = 'Parser warning: ' + ' (' + warning.code + ') ' + warning.message
-          for loc in warning['location']
-            pos = loc.index + ':' + loc.length
-            message = message + ' ' + pos
-          logger.warn message
+          runtimeError = handleRuntimeProblems runtime
+          return callback(runtimeError, stats) if runtimeError
 
-      runtime = blueprintAstToRuntime result['ast']
-      runtimeError = handleRuntimeProblems runtime
-      return callback(runtimeError, stats) if runtimeError
-
-      @runner.run runtime['transactions'], () =>
-        @transactionsComplete(callback)
+          reporterCount = config.emitter.listeners('start').length
+          config.emitter.emit 'start', config.data, () =>
+            reporterCount--
+            if reporterCount is 0
+              @runner.run runtime['transactions'], () =>
+                @transactionsComplete(callback)
 
   transactionsComplete: (callback) =>
     stats = @stats
