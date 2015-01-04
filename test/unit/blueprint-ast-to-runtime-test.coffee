@@ -58,6 +58,11 @@ describe "blueprintAstToRuntime()", () ->
             assert.property transaction['origin'], 'filename', 'Transaction index ' + index
             assert.equal transaction['origin']['filename'], filename, 'Transaction index ' + index
 
+        it 'have apiName property', () ->
+          transactions.forEach (transaction, index) ->
+            assert.property transaction['origin'], 'apiName', 'Transaction index ' + index
+            assert.equal transaction['origin']['apiName'], 'Machines API', 'Transaction index ' + index
+
       describe 'value under request key', () ->
         ['uri','method','headers','body'].forEach (key) ->
           it 'has key: ' + key , () ->
@@ -125,4 +130,26 @@ describe "blueprintAstToRuntime()", () ->
 
     it 'should have piped all warnings from exampleToHttpPayloadPair', () ->
       assert.notEqual data['warnings'].length, 0
+
+  describe 'when no api name, group name, resource name and action name in ast', () ->
+    transaction = null
+    filename = './path/to/blueprint.apib'
+    before () ->
+      simpleUnnamedAst = require '../fixtures/simple-unnamed-ast'
+      data = blueprintAstToRuntime simpleUnnamedAst, filename
+      transaction = data['transactions'][0]
+
+    it 'should use filename as api name', () ->
+      assert.equal transaction['origin']['apiName'], filename
+
+    # should not be possible specify more than one unnamed group, must verify
+    #it 'should use Group + group index as group name', () ->
+    #  assert.equal transaction['origin']['resourceGroupName'], 'Group 1'
+
+    it 'should use URI for resource name', () ->
+      assert.equal transaction['origin']['resourceName'], '/message'
+
+    it 'should use method for action name', () ->
+      assert.equal transaction['origin']['actionName'], 'GET'
+
 

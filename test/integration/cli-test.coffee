@@ -615,3 +615,15 @@ describe "Command line interface", () ->
 
       it 'exit status should be 1 (failure)', () ->
         assert.equal exitStatus, 1
+
+  describe "when blueprint path is a glob and called with --names options", () ->
+    before (done) ->
+      cmd = "./bin/dredd ./test/fixtures/multifile/*.apib http://localhost --names"
+      execCommand cmd, () ->
+        done()
+
+    it 'it should include all paths from all blueprints matching the glob', () ->
+      assert.include stdout, 'Group 1 > /greeting > GET'
+      assert.include stdout, 'Group 1 > /message > GET'
+      assert.include stdout, 'Group 1 > /name > GET'
+

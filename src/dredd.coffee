@@ -16,6 +16,8 @@ configureReporters = require './configure-reporters'
 
 class Dredd
   constructor: (config) ->
+    console.log 'config'
+    console.log JSON.stringify config, null, 2
     @tests = []
     @stats =
         tests: 0
@@ -36,9 +38,13 @@ class Dredd
 
     config.files = []
 
+    # expand all globs
+    console.log 'globs'
+    console.log config.options.path
     async.each config.options.path, (globToExpand, globCallback) ->
       glob globToExpand, (err, match) ->
         globCallback err if err
+        console.log match, globToExpand
         config.files = config.files.concat match
         globCallback()
 
@@ -46,11 +52,16 @@ class Dredd
       return callback(err, stats) if err
       return callback({message: "Blueprint file or files not found on path: '#{config.options.path}'"}, stats) if config.files.length == 0
 
-      # only unique files
+      # remove duplicate filenames
       config.files = config.files.filter (item, pos) ->
         return config.files.indexOf(item) == pos
 
+      console.log 'files'
+      console.log config.files
+
       config.data = {}
+
+      # load all files
       async.each config.files, (file, loadCallback) ->
         fs.readFile file, 'utf8', (loadingError, data) ->
           return loadCallback(loadingError) if loadingError
@@ -59,7 +70,10 @@ class Dredd
 
       , (err) =>
         return callback(err, stats) if err
+        console.log 'data'
+        console.log config.data
 
+        # parse all file blueprints
         async.each Object.keys(config.data), (file, parseCallback) ->
           protagonist.parse config.data[file]['raw'], (protagonistError, result) ->
             return parseCallback protagonistError if protagonistError
@@ -67,7 +81,7 @@ class Dredd
             parseCallback()
         , (err) =>
           return callback(err, config.reporter) if err
-
+          # log all parser warnings for each ast
           for file, data of config.data
             result = data['parsed']
             if result['warnings'].length > 0
@@ -78,23 +92,31 @@ class Dredd
                   message = message + ' ' + pos
                 logger.warn message
 
-          runtime = {}
-          runtime['warnings'] = []
-          runtime['errors'] = []
-          runtime['transactions'] = []
-          for file, data of config.data
-            runtime['warnings'] = runtime['warnings'].concat(blueprintAstToRuntime(result['ast'], file)['warnings'])
-            runtime['errors'] = runtime['errors'].concat(blueprintAstToRuntime(result['ast'], file)['errors'])
-            runtime['transactions'] = runtime['transactions'].concat(blueprintAstToRuntime(result['ast'], file)['transactions'])
+          runtimes = {}
+          runtimes['warnings'] = []
+          runtimes['errors'] = []
+          runtimes['transactions'] = []
 
-          runtimeError = handleRuntimeProblems runtime
+          # extract http transactions for each ast
+          for file, data of config.data
+            runtime = blueprintAstToRuntime data['parsed']['ast'], file
+
+            runtimes['warnings'] = runtimes['warnings'].concat(runtime['warnings'])
+            runtimes['errors'] = runtimes['errors'].concat(runtime['errors'])
+            runtimes['transactions'] = runtimes['transactions'].concat(runtime['transactions'])
+
+          runtimeError = handleRuntimeProblems runtimes
           return callback(runtimeError, stats) if runtimeError
 
           reporterCount = config.emitter.listeners('start').length
           config.emitter.emit 'start', config.data, () =>
             reporterCount--
             if reporterCount is 0
-              @runner.run runtime['transactions'], () =>
+
+              # run all transactions
+              console.log 'transactions'
+              console.log JSON.stringify runtimes['transactions'], null, 2
+              @runner.run runtimes['transactions'], () =>
                 @transactionsComplete(callback)
 
   transactionsComplete: (callback) =>

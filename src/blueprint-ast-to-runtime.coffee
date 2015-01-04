@@ -13,14 +13,23 @@ blueprintAstToRuntime = (blueprintAst, filename) ->
   origin = {}
   origin['filename'] = filename
 
-  for resourceGroup in blueprintAst['resourceGroups']
-    origin['resourceGroupName'] = resourceGroup['name']
+  if blueprintAst['name'] != ""
+    origin['apiName'] = blueprintAst['name']
+  else
+    origin['apiName'] = origin['filename']
 
+  for resourceGroup, index in blueprintAst['resourceGroups']
     for resource in resourceGroup['resources']
-      origin['resourceName'] = resource['name']
+      if resource['name'] != ""
+        origin['resourceName'] = resource['name']
+      else
+        origin['resourceName'] = resource['uriTemplate']
 
       for action in resource['actions']
-        origin['actionName'] = action['name']
+        if action['name'] != ""
+          origin['actionName'] = action['name']
+        else
+          origin['actionName'] = action['method']
 
         actionParameters = convertAstMetadata action['parameters']
         resourceParameters = convertAstMetadata resource['parameters']
