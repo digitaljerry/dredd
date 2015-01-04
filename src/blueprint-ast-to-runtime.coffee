@@ -19,6 +19,14 @@ blueprintAstToRuntime = (blueprintAst, filename) ->
     origin['apiName'] = origin['filename']
 
   for resourceGroup, index in blueprintAst['resourceGroups']
+    #should not be possible specify more than one unnamed group, must verify
+    # if resourceGroup['name'] != ""
+    #   origin['resourceGroupName'] = resourceGroup['name']
+    # else
+    #   origin['resourceGroupName'] = "Group #{index + 1}"
+
+    origin['resourceGroupName'] = resourceGroup['name']
+
     for resource in resourceGroup['resources']
       if resource['name'] != ""
         origin['resourceName'] = resource['name']

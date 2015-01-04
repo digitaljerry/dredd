@@ -16,8 +16,6 @@ configureReporters = require './configure-reporters'
 
 class Dredd
   constructor: (config) ->
-    console.log 'config'
-    console.log JSON.stringify config, null, 2
     @tests = []
     @stats =
         tests: 0
@@ -30,7 +28,7 @@ class Dredd
         duration: 0
     @configuration = applyConfiguration(config, @stats)
     configureReporters @configuration, @stats, @tests
-    @runner = new Runner(@configuration)
+    @runner = new Runner @configuration
 
   run: (callback) ->
     config = @configuration
@@ -39,12 +37,9 @@ class Dredd
     config.files = []
 
     # expand all globs
-    console.log 'globs'
-    console.log config.options.path
     async.each config.options.path, (globToExpand, globCallback) ->
       glob globToExpand, (err, match) ->
         globCallback err if err
-        console.log match, globToExpand
         config.files = config.files.concat match
         globCallback()
 
@@ -55,9 +50,6 @@ class Dredd
       # remove duplicate filenames
       config.files = config.files.filter (item, pos) ->
         return config.files.indexOf(item) == pos
-
-      console.log 'files'
-      console.log config.files
 
       config.data = {}
 
@@ -70,8 +62,6 @@ class Dredd
 
       , (err) =>
         return callback(err, stats) if err
-        console.log 'data'
-        console.log config.data
 
         # parse all file blueprints
         async.each Object.keys(config.data), (file, parseCallback) ->
@@ -114,8 +104,7 @@ class Dredd
             if reporterCount is 0
 
               # run all transactions
-              console.log 'transactions'
-              console.log JSON.stringify runtimes['transactions'], null, 2
+              @runner.config(config)
               @runner.run runtimes['transactions'], () =>
                 @transactionsComplete(callback)
 

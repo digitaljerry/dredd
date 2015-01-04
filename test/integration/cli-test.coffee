@@ -3,8 +3,6 @@
 express = require 'express'
 fs = require 'fs'
 
-
-
 PORT = '3333'
 CMD_PREFIX = ''
 
@@ -616,14 +614,44 @@ describe "Command line interface", () ->
       it 'exit status should be 1 (failure)', () ->
         assert.equal exitStatus, 1
 
-  describe "when blueprint path is a glob and called with --names options", () ->
-    before (done) ->
-      cmd = "./bin/dredd ./test/fixtures/multifile/*.apib http://localhost --names"
-      execCommand cmd, () ->
-        done()
+  describe "when blueprint path is a glob", () ->
+    describe "and called with --names options", () ->
+      before (done) ->
+        cmd = "./bin/dredd ./test/fixtures/multifile/*.apib http://localhost --names"
+        execCommand cmd, () ->
+          done()
 
-    it 'it should include all paths from all blueprints matching the glob', () ->
-      assert.include stdout, 'Group 1 > /greeting > GET'
-      assert.include stdout, 'Group 1 > /message > GET'
-      assert.include stdout, 'Group 1 > /name > GET'
+      it 'it should include all paths from all blueprints matching the glob', () ->
+        assert.include stdout, '> /greeting > GET'
+        assert.include stdout, '> /message > GET'
+        assert.include stdout, '> /name > GET'
+
+    describe 'and called with hooks', () ->
+
+    recievedRequest = {}
+
+    before (done) ->
+      cmd = "./bin/dredd ./test/fixtures/multifile/*.apib http://localhost:#{PORT} --hookfiles ./test/fixtures/multifile/multifile_hooks.coffee"
+
+      app = express()
+
+      app.get '/machines', (req, res) ->
+        recievedRequest = req
+        res.setHeader 'Content-Type', 'application/json'
+        machine =
+          type: 'bulldozer'
+          name: 'willy'
+        response = [machine]
+        res.status(200).send response
+
+      server = app.listen PORT, () ->
+        execCommand cmd, () ->
+          server.close()
+
+      server.on 'close', done
+
+    it 'should eval the hook for each transaction', () ->
+      assert.include stdout, 'after name'
+      assert.include stdout, 'after greeting'
+      assert.include stdout, 'after message'
 
