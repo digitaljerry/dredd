@@ -60,6 +60,40 @@ describe 'TransactionRunner', ()->
     it 'should add hooks', () ->
       assert.ok addHooksStub.called
 
+  describe 'config(config)', () ->
+    describe 'when single file in data is present', () ->
+      it 'should set multiBlueprint to false', () ->
+        configuration =
+          server: 'http://localhost:3000'
+          emitter: new EventEmitter()
+          data: {"file1": {"raw": "blueprint1"}}
+          options:
+            'dry-run': false
+            method: []
+            header: []
+            reporter: []
+
+        runner = new Runner(configuration)
+        runner.config(configuration)
+
+        assert.notOk runner.multiBlueprint
+
+    describe 'when multiple files in data are present', () ->
+      it 'should set multiBlueprint to true', () ->
+        configuration =
+          server: 'http://localhost:3000'
+          emitter: new EventEmitter()
+          data: {"file1": {"raw": "blueprint1"}, "file2": {"raw": "blueprint2"} }
+          options:
+            'dry-run': false
+            method: []
+            header: []
+            reporter: []
+        runner = new Runner(configuration)
+        runner.config(configuration)
+
+        assert.ok runner.multiBlueprint
+
   describe 'configureTransaction(transaction, callback)', () ->
 
     beforeEach () ->
@@ -78,12 +112,27 @@ describe 'TransactionRunner', ()->
               value: "application/json"
           status: "202"
         origin:
+          apiName: "Machines API"
           resourceGroupName: "Group Machine"
           resourceName: "Machine"
           actionName: "Delete Message"
           exampleName: "Bogus example name"
 
       runner = new Runner(configuration)
+
+    describe 'when processing multiple blueprints', () ->
+      it 'should include api name in the transaction name', (done) ->
+        runner.multiBlueprint = true
+        runner.configureTransaction transaction, (err, configuredTransaction) ->
+          assert.include configuredTransaction.name, 'Machines API'
+          done()
+
+    describe 'when processing only single blueprint', () ->
+      it 'should not include api name in the transaction name', (done) ->
+        runner.multiBlueprint = false
+        runner.configureTransaction transaction, (err, configuredTransaction) ->
+          assert.notInclude configuredTransaction.name, 'Machines API'
+          done()
 
     describe 'when request does not have User-Agent', () ->
 
