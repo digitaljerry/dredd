@@ -152,4 +152,30 @@ describe "blueprintAstToRuntime()", () ->
     it 'should use method for action name', () ->
       assert.equal transaction['origin']['actionName'], 'GET'
 
+  describe 'when some action have multiple examples', () ->
+
+    filename = './path/to/blueprint.apib'
+    transactions = null
+
+    before () ->
+      simpleUnnamedAst = require '../fixtures/multiple-examples'
+      transactions = blueprintAstToRuntime(simpleUnnamedAst, filename)['transactions']
+
+    it 'should set exampleName for first transaction to "Example 1"', () ->
+      assert.equal transactions[0]['origin']['exampleName'], "Example 1"
+
+    it 'should set exampleName for second transaction to "Example 2"', () ->
+      assert.equal transactions[1]['origin']['exampleName'], "Example 2"
+
+  describe 'when some action doesn\'t have multiple examples', () ->
+
+    filename = './path/to/blueprint.apib'
+    transactions = null
+
+    before () ->
+      simpleUnnamedAst = require '../fixtures/single-get'
+      transactions = blueprintAstToRuntime(simpleUnnamedAst, filename)['transactions']
+
+    it 'should let example name intact', () ->
+      assert.equal transactions[0]['origin']['exampleName'], ""
 

@@ -70,8 +70,11 @@ blueprintAstToRuntime = (blueprintAst, filename) ->
 
 
         if uriResult['uri'] != null
-          for example in action['examples']
-            origin['exampleName'] = example['name']
+          for example, exampleIndex in action['examples']
+            if action['examples'].length > 1 and example['name'] == ""
+              origin['exampleName'] = "Example " + (exampleIndex + 1)
+            else
+              origin['exampleName'] = example['name']
 
             result = exampleToHttpPayloadPair example
 
