@@ -263,6 +263,28 @@ describe 'TransactionRunner', ()->
           assert.ok configuration.emitter.emit.calledWith 'test skip'
           done()
 
+    describe 'when only certain names are allowed by the configuration', () ->
+
+      beforeEach () ->
+        configuration.options['only'] = ['Group Machine > Machine > Delete Message > Bogus example name']
+        sinon.stub configuration.emitter, 'emit'
+        runner = new Runner(configuration)
+
+      afterEach () ->
+        configuration.emitter.emit.restore()
+        configuration.options['method'] = []
+
+      it 'should skip transactions with different names', (done) ->
+        transaction['name'] = 'Group Machine > Machine > Delete Message > Bogus different example name'
+        runner.executeTransaction transaction, () ->
+          assert.ok configuration.emitter.emit.calledWith 'test skip'
+          done()
+
+      it 'should not skip transactions with matching names', (done) ->
+        runner.executeTransaction transaction, () ->
+          assert.notOk configuration.emitter.emit.calledWith 'test skip'
+          done()
+
     describe 'when a test has been manually set to skip in a hook', () ->
 
       beforeEach () ->

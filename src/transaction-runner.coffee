@@ -143,6 +143,9 @@ class TransactionRunner
     else if configuration.options.method.length > 0 and not (transaction.request.method in configuration.options.method)
       configuration.emitter.emit 'test skip', test
       return callback()
+    else if configuration.options.only.length > 0 and not (transaction.name in configuration.options.only)
+      configuration.emitter.emit 'test skip', test
+      return callback()
     else if transaction.skip
       # manually set to skip a test
       configuration.emitter.emit 'test skip', test

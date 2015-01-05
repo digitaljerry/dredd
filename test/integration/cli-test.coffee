@@ -374,6 +374,36 @@ describe "Command line interface", () ->
         it 'should allow the request to go through', () ->
           assert.ok recievedRequest.headers
 
+    describe "when filtering transaction to particular name  with -x or only", () ->
+
+      recievedRequest = null
+
+      before (done) ->
+        cmd = "./bin/dredd ./test/fixtures/single-get.apib http://localhost:#{PORT} --no-color -x \"Machines > Not existing machines collection > Get Machines\""
+
+        app = express()
+
+        app.get '/machines', (req, res) ->
+          recievedRequest = req
+          res.setHeader 'Content-Type', 'application/json'
+          machine =
+            type: 'bulldozer'
+            name: 'willy'
+          response = [machine]
+          res.status(200).send response
+
+        server = app.listen PORT, () ->
+          execCommand cmd, () ->
+            server.close()
+
+        server.on 'close', done
+
+        it 'should not send the request request', () ->
+          assert.isNull recievedRequest
+
+        it 'should notify skipping to the stdout', () ->
+          assert.include stdout, 'skip: GET /machines'
+
     describe 'when suppressing color with --no-color', () ->
 
       recievedRequest = {}

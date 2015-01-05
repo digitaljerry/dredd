@@ -14,6 +14,11 @@ options =
     description: 'Only list names of requests (for use in a hookfile). No requests are made.'
     default: false
 
+  only:
+    alias: "x"
+    description: "Run only specified transaction name. Can be used multiple times"
+    default: []
+
   reporter:
     alias: "r"
     description: "Output additional report format. This option can be used multiple times to add multiple reporters. Options: junit, nyan, dot, markdown, html, apiary.\n"
